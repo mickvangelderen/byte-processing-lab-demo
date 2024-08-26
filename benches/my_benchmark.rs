@@ -11,11 +11,12 @@ fn transform(pair: [u8; 2]) -> u8 {
 }
 
 fn func_safe(input: &[u8]) -> Vec<u8> {
-    assert_input_valid(input);
-    input
-        .chunks(2)
-        .map(|chunk| transform(chunk.try_into().unwrap()))
-        .collect()
+    let chunks = input.chunks_exact(2);
+    assert!(
+        chunks.remainder().is_empty(),
+        "input length should be a multiple of 2"
+    );
+    chunks.map(|chunk| transform(chunk.try_into().unwrap())).collect()
 }
 
 fn func_unsafe(input: &[u8]) -> Vec<u8> {
@@ -90,20 +91,16 @@ fn bench_func(c: &mut Criterion) {
         let input = iter::repeat(0u8)
             .take(byte_count as usize)
             .collect::<Vec<_>>();
-        group.bench_with_input(
-            BenchmarkId::new("safe", pair_count),
-            &input,
-            |b, input| {
-                b.iter(|| func_safe(input));
-            },
-        );
-        group.bench_with_input(
-            BenchmarkId::new("unsafe", pair_count),
-            &input,
-            |b, i| {
-                b.iter(|| func_unsafe(i));
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("safe", pair_count), &input, |b, input| {
+            b.iter(|| func_safe(input));
+        });
+        // group.bench_with_input(
+        //     BenchmarkId::new("unsafe", pair_count),
+        //     &input,
+        //     |b, i| {
+        //         b.iter(|| func_unsafe(i));
+        //     },
+        // );
     }
     group.finish();
 }
